@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #f8cdda, #1d2b64);
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .quiz-container {
+      background-color: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      width: 600px;
+      max-width: 90%;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 24px;
+      color: #333;
+    }
+
+    .question-block {
+      margin-bottom: 24px;
+    }
+
+    .question-block p {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+
+    input[type="radio"] {
+      margin-right: 8px;
+    }
+
+    .btn-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #4A90E2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #357ABD;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h2>Quiz</h2>
+    <div id="quiz"></div>
+
+    <div class="btn-container">
+      <button id="prevBtn" onclick="prevPage()" class="hidden">Previous</button>
+      <button id="nextBtn" onclick="nextPage()">Next</button>
+      <button id="submitBtn" onclick="submitQuiz()" class="hidden">Submit</button>
+    </div>
+  </div>
+
+  <script>
+    let questionsCache = [];
+    let answers = {}; // store selected answers
+    let currentPage = 0;
+    const pageSize = 4; // ✅ maximum 5 questions per page
+
+    async function loadQuiz() {
+      try {
+        const res = await fetch("http://localhost:5000/api/questions");
+        questionsCache = await res.json();
+        renderPage();
+      } catch (error) {
+        console.error("Error loading quiz:", error);
+        document.getElementById("quiz").innerHTML = "<p>Failed to load quiz questions.</p>";
+      }
+    }
+
+    function renderPage() {
+      const quizDiv = document.getElementById("quiz");
+      quizDiv.innerHTML = "";
+
+      const start = currentPage * pageSize;
+      const end = Math.min(start + pageSize, questionsCache.length);
+      const pageQuestions = questionsCache.slice(start, end);
+
+      pageQuestions.forEach(q => {
+        const qDiv = document.createElement("div");
+        qDiv.className = "question-block";
+        qDiv.innerHTML = `<p><strong>${q.question}</strong></p>`;
+
+        q.options.forEach(opt => {
+          const checked = answers[q._id] === opt ? "checked" : "";
+          qDiv.innerHTML += `
+            <label>
+              <input type="radio" name="q${q._id}" value="${opt}" ${checked}
+                onchange="saveAnswer('${q._id}', this.value)"> ${opt}
+            </label>`;
+        });
+
+        quizDiv.appendChild(qDiv);
+      });
+
+      // Button visibility
+      document.getElementById("prevBtn").classList.toggle("hidden", currentPage === 0);
+      document.getElementById("nextBtn").classList.toggle("hidden", end >= questionsCache.length);
+      document.getElementById("submitBtn").classList.toggle("hidden", end < questionsCache.length);
+
+      // ✅ Always scroll to top of container when switching pages
+      document.querySelector(".quiz-container").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function saveAnswer(qId, value) {
+      answers[qId] = value;
+    }
+
+    function nextPage() {
+      if ((currentPage + 1) * pageSize < questionsCache.length) {
+        currentPage++;
+        renderPage();
+      }
+    }
+
+    function prevPage() {
+      if (currentPage > 0) {
+        currentPage--;
+        renderPage();
+      }
+    }
+
+    async function submitQuiz() {
+      let score = 0;
+
+      questionsCache.forEach(q => {
+        if (answers[q._id] && answers[q._id] === q.answer) {
+          score++;
+        }
+      });
+
+      const email = prompt("Enter your email to save result:");
+      if (!email) return;
+
+      //submit route
+await fetch("http://localhost:5000/api/result", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, score, total: questionsCache.length })
+});
+
+// Redirect to thank you page
+window.location.href = "lastpage.html";
+
+      alert(`You scored ${score} out of ${questionsCache.length}`);
+    }
+
+    loadQuiz();
+  </script>
+</body>
+</html>

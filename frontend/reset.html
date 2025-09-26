@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reset Password</title>
+  <style>
+   #loginLink {
+  margin-top: 16px;
+  display: inline-block;
+  font-size: 14px;
+  color: #ff7f50;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+#loginLink:hover {
+  color: #e5673e;
+  text-decoration: underline;
+}
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 1s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .reset-container {
+      background-color: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+      width: 360px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 24px;
+      color: #333;
+      font-size: 24px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+
+    input:focus {
+      border-color: #fda085;
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #ff7f50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #e5673e;
+    }
+
+    .message {
+      margin-top: 16px;
+      font-size: 14px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <div class="reset-container">
+   
+    <h2>Reset Your Password</h2>
+    <form id="resetForm">
+      <input type="password" id="newPassword" placeholder="Enter new password" required />
+      <button type="submit">Reset Password</button>
+      <a href="/login.html" id="loginLink" style="display: none;">Back to Login</a>
+    </form>
+    <div class="message" id="message"></div>
+  </div>
+
+  <script>
+  const token = window.location.pathname.split("/").pop();
+  const loginLink = document.getElementById("loginLink");
+
+  document.getElementById("resetForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const newPassword = document.getElementById("newPassword").value;
+    const messageDiv = document.getElementById("message");
+
+    try {
+      const res = await fetch(`/reset-password/${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        messageDiv.textContent = data.message || "Password reset successful!";
+        messageDiv.style.color = "green";
+
+        // ✅ Show login link
+        loginLink.style.display = "inline-block";
+      } else {
+        messageDiv.textContent = data.message || "Failed to reset password.";
+        messageDiv.style.color = "red";
+      }
+    } catch (error) {
+      messageDiv.textContent = "Something went wrong. Please try again.";
+      messageDiv.style.color = "red";
+      console.error("Reset error:", error);
+    }
+  });
+</script>
+</body>
+</html>
